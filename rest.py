@@ -26,8 +26,10 @@ class PhenotipsClient(Browser):
         Browser.__init__(self,site=site,debug=debug,print_requests=print_requests)
 
     def get_patient(self,auth,eid=None):
-        # get patient with eid or all patients if not
-        # specified
+        """
+        Get patient with eid or all patients if not
+        specified
+        """
         auth=b2a_base64(auth).strip()
         headers={'Authorization':'Basic %s'%auth, 'Accept':'application/json'}
         if not eid:
@@ -102,6 +104,11 @@ class PhenotipsClient(Browser):
         print(p)
 
     def update_phenotips_from_csv(info, owner,password):
+        """
+        Each column in the csv file
+        represent a patient atribute.
+        This only supports one feature for now
+        """
         info=pandas.read_csv(info)
         print(info.columns.values)
         for i, r, in info.iterrows():
@@ -141,8 +148,11 @@ class PhenotipsClient(Browser):
             else:  return []
         else: return []
 
-    def dump_hpo_to_csv(self, outFile, owner, password):
-        auth='%s:%s' % (owner, password,)
+    def dump_hpo_to_tsv(self, outFile, auth):
+        """
+        Dumps the HPO terms from a patient record
+        to tsv file.
+        """
         patients=get_patient(auth)['patientSummaries']
         #file(sprintf('uclex_hpo_%d-%d-%d.txt'),)
         hpo_file=open(outFile, 'w+')
@@ -164,7 +174,10 @@ class PhenotipsClient(Browser):
             print(eid, hpo, genes, solved, sep='\t',file=hpo_file)
 
 
-    def dump_hpo_to_json(self, outFile, owner, password):
+    def dump_patient_to_json(self, auth):
+        """
+        Dumps patient to JSON.
+        """
         auth='%s:%s' % (owner, password,)
         patients=get_patient(auth)['patientSummaries']
         for p in patients:

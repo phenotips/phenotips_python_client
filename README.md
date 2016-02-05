@@ -17,6 +17,11 @@ Retrieve all patients:
 patients=conn.get_patients(auth='username:password')
 ```
 
+Retrieve patient with a specific external id:
+```python
+patient=conn.get_patients(auth='username:password',eid='Patient_XYZ')
+```
+
 Create/update patient:
 ```python
 conn.update_patient(auth='username:password', patient={'external_id':'patient1','reporter':'Joe Bloggs','owner':'Joe Bloggs', 'features':{}}, eid='patient1')
