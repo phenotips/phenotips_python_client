@@ -163,7 +163,6 @@ class PhenotipsClient(Browser):
     def dump_hpo_to_json(self, outFile, owner, password):
         auth='%s:%s' % (owner, password,)
         patients=get_patient(auth)['patientSummaries']
-        #hpo_file=open(outFile, 'w+')
         for p in patients:
             eid=p['eid']
             print(eid)
