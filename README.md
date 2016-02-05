@@ -34,28 +34,28 @@ conn.dump_to_mongodb(auth='username:password',mongo_host='localhost',mongo_port=
 
 ## Example
 
+Write HPO terms to hpo.txt:
+
 ```python
 from __future__ import print_function
 import sys
-import rest
-import datetime
+from phenotips_client import PhenotipsClient
 
-
-now = datetime.datetime.now()
-
+# this is passed from command line
 auth=sys.argv[1]
 
-patients=rest.get_patient(auth)['patientSummaries']
+conn=PhenotipsClient(host='localhost',port=8080)
 
-#file(sprintf('uclex_hpo_%d-%d-%d.txt'),)
-hpo_file=open('uclex-hpo.txt', 'w+')
+patients=conn.get_patient(auth)['patientSummaries']
+
+hpo_file=open('hpo.txt', 'w+')
 
 print('eid', 'hpo', 'genes', 'solved', sep='\t',file=hpo_file)
 
 for p in patients:
     eid=p['eid']
     print(eid)
-    patient=rest.get_patient(auth,eid)
+    patient=conn.get_patient(auth,eid)
     print(patient)
     if 'features' in patient:
         hpo=','.join([f['id'] for f in patient['features']])
