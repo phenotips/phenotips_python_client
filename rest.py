@@ -195,7 +195,7 @@ class PhenotipsClient(Browser):
         Dumps all patients to a Mongo database
         """
         import pymongo
-        client = pymongo.MongoClient(host=mongo_host, port=mongo_port)
+        client = pymongo.MongoClient(host=mongo_host, port=int(mongo_port))
         db=client[mongo_dbname]
         db.patients.drop()
         db.patients.ensure_index('external_id')
