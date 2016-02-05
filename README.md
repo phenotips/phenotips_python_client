@@ -1,3 +1,3 @@
-The phenotips API where all the HPO data comes from.
-Phenotips is running on the same machine.
+A python browser extension for interfacing with the Phenotips API.
+
 
