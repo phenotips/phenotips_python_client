@@ -19,10 +19,12 @@ patients=conn.get_patients(auth='username:password')
 
 Create/update patient:
 ```python
+conn.update_patient(auth='', patient=, ID=)
 ```
 
-Dump all patients to mongo database:
+Dump all patients to a Mongo database on local host running on port 27017:
 ```python
-
+conn.dump_to_mongodb(auth='username:password',mongo_host='localhost',mongo_port='27017',mongo_dbname='patients')
 ```
+
 
