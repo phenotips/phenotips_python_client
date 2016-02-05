@@ -46,8 +46,8 @@ class PhenotipsClient(Browser):
                 return None
         return d
 
-    def patient_exists(self,auth,eid=None):
-        p=get_patient(auth,eid)
+    def patient_exists(self,auth,eid):
+        p=self.get_patient(auth,eid)
         if p is None:
             return False
         else:
@@ -73,28 +73,32 @@ class PhenotipsClient(Browser):
         p=self.get_page('/rest/patients', headers=headers, post=json_patient)
         print(p)
 
-    def update_patient(self, ID, auth, patient):
-        io=StringIO()
-        json.dump(patient,io)
-        json_patient=io.getvalue()
-        if patient_exists(auth,ID):
+    def update_patient(self, eid, auth, patient):
+        """
+        Update patient if exists, otherwise create.
+        """
+        patient['external_id']=eid
+        if self.patient_exists(auth=auth,eid=eid):
+            io=StringIO()
+            json.dump(patient,io)
+            json_patient=io.getvalue()
             print('update')
             print(patient)
             headers={'Authorization':'Basic %s'% b2a_base64(auth).strip(),'Content-Type':'application/json', 'Accept':'application/json'}
-            p=self.get_page('/rest/patients/eid/%s'%ID, headers=headers, post=json_patient, special='PUT')
+            p=self.get_page('/rest/patients/eid/%s'%eid, headers=headers, post=json_patient, special='PUT')
             print(p)
         else:
             print('create')
             print(patient)
-            create_patient(auth,patient)
+            self.create_patient(auth=auth,patient=patient)
 
-    def delete_patient(self, ID, auth, patient):
+    def delete_patient(self, eid, auth, patient):
         auth=b2a_base64(auth).strip()
         headers={'Authorization':'Basic %s'%auth, 'Content-Type':'application/json', 'Accept':'application/json'}
         io=StringIO()
         json.dump(patient,io)
         json_patient=io.getvalue()
-        p=self.get_page('/rest/patients/eid/%s'%ID, headers=headers, post=json_patient, special='DELETE')
+        p=self.get_page('/rest/patients/eid/%s'%eid, headers=headers, post=json_patient, special='DELETE')
         print(p)
 
     def update_phenotips_from_csv(info, owner,password):
@@ -125,7 +129,7 @@ class PhenotipsClient(Browser):
             #update_patient(ID=r['sample'],auth=auth,patient=patient)
             #delete_patient(ID=r['sample'],auth=auth,patient=patient)
             # if patient exists, update patient, otherwise create patient
-            update_patient(patient['external_id'],auth,patient)
+            self.update_patient(eid=patient['external_id'],auth=auth,patient=patient)
 
     def patient_hpo(self, eid, auth):
         """
@@ -173,19 +177,21 @@ class PhenotipsClient(Browser):
             print(json_patient)
 
 
-    def dump_to_mongodb(self, user, password):
+    def dump_to_mongodb(self, auth, mongo_host='localhost', mongo_port=27016, mongo_dbname='patients'):
+        """
+        Dumps all patients to a Mongo database
+        """
         import pymongo
-        client = pymongo.MongoClient(host='localhost', port=27016)
-        db=client['patients']
+        client = pymongo.MongoClient(host=mongo_host, port=mongo_port)
+        db=client[mongo_dbname]
         db.patients.drop()
         db.patients.ensure_index('external_id')
         db.patients.ensure_index('report_id')
-        auth='%s:%s' % (user, password,)
-        patients=get_patient(auth)['patientSummaries']
+        patients=self.get_patient(auth)['patientSummaries']
         for p in patients:
             eid=p['eid']
             print(eid)
-            p=get_patient(auth,eid)
+            p=self.get_patient(auth,eid)
             db.patients.insert(p,w=0)
 
 
