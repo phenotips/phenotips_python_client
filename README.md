@@ -34,7 +34,7 @@ conn.dump_to_mongodb(auth='username:password',mongo_host='localhost',mongo_port=
 
 ## Example
 
-Write HPO terms to hpo.txt:
+Write external id, HPO terms, genes and solved status to hpo.txt:
 
 ```python
 from __future__ import print_function
