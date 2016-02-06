@@ -8,7 +8,7 @@ A python browser extension for interfacing with the [Phenotips API](https://phen
 Assuming phenotips server is running on port 8080 on the local host, this is how to connect:
 
 ```python
-from phenotips_client import PhenotipsClient
+from phenotips_python_client import PhenotipsClient
 conn=PhenotipsClient(host='localhost',port=8080)
 ```
 
@@ -39,7 +39,7 @@ Write HPO terms to hpo.txt:
 ```python
 from __future__ import print_function
 import sys
-from phenotips_client import PhenotipsClient
+from phenotips_python_client import PhenotipsClient
 
 # this is passed from command line
 auth=sys.argv[1]
