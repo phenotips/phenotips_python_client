@@ -55,15 +55,13 @@ class PhenotipsClient(Browser):
         else:
             return True
 
-    def get_vocabularies(self,auth):
+    def get_permissions(self,auth,ID):
+        """
+        Retrieves all permissions: owner, collaborators, visibility.
+        """
         auth=b2a_base64(auth).strip()
-        # get vocabularies
         headers={'Authorization':'Basic %s'%auth, 'Accept':'application/json; application/xml'}
-        p=self.get_page('/rest/vocabularies', headers=headers)
-        print(p)
-        #io = StringIO(p)
-        #d=json.load( io )
-        #print(d)
+        p=self.get_page('/patients/%s/permissions',ID, headers=headers)
         return p
 
     # create patient
@@ -74,6 +72,7 @@ class PhenotipsClient(Browser):
         json_patient=io.getvalue()
         p=self.get_page('/rest/patients', headers=headers, post=json_patient)
         print(p)
+        return(p)
 
     def update_patient(self, eid, auth, patient):
         """
@@ -87,20 +86,55 @@ class PhenotipsClient(Browser):
             print('update')
             print(patient)
             headers={'Authorization':'Basic %s'% b2a_base64(auth).strip(),'Content-Type':'application/json', 'Accept':'application/json'}
-            p=self.get_page('/rest/patients/eid/%s'%eid, headers=headers, post=json_patient, special='PUT')
-            print(p)
+            self.get_page('/rest/patients/eid/%s'%eid, headers=headers, post=json_patient, special='PUT')
         else:
             print('create')
             print(patient)
             self.create_patient(auth=auth,patient=patient)
 
-    def delete_patient(self, eid, auth):
+
+    def update_permissions(self, permissions, auth, ID=None, eid=None):
+        """
+        Update permissions of patient.
+        """
+        #permission = { "owner" : { "id" : "xwiki:XWiki.RachelGillespie" }, "visibility" : { "level":  "private" }, "collaborators" : [{ "id" : "xwiki:XWiki.UKIRDC", "level" : "edit" }, { "id" : "xwiki:Groups.UKIRDC Administrators)", "level" : "edit" }] }
+        if not ID:
+            p=self.get_patient(auth=auth,eid=eid)
+            ID=p['id']
         auth=b2a_base64(auth).strip()
         headers={'Authorization':'Basic %s'%auth, 'Content-Type':'application/json', 'Accept':'application/json'}
-        #io=StringIO()
-        #json.dump(patient,io)
-        #json_patient=io.getvalue()
-        #p=self.get_page('/rest/patients/eid/%s'%eid, headers=headers, post=json_patient, special='DELETE')
+        io=StringIO()
+        json.dump(permissions,io)
+        json_permissions=io.getvalue()
+        p=self.get_page('/rest/patients/%s/permissions'%ID, headers=headers, post=json_permissions, special='PUT')
+        print(p)
+        return(p)
+
+
+    def update_owner(self, owner, auth, ID=None, eid=None):
+        """
+        Update owner of patient.
+        """
+        #permission = { "owner" : { "id" : "xwiki:XWiki.RachelGillespie" }, "visibility" : { "level":  "private" }, "collaborators" : [{ "id" : "xwiki:XWiki.UKIRDC", "level" : "edit" }, { "id" : "xwiki:Groups.UKIRDC Administrators)", "level" : "edit" }] }
+        if not ID:
+            p=self.get_patient(auth=auth,eid=eid)
+            ID=p['id']
+        auth=b2a_base64(auth).strip()
+        headers={'Authorization':'Basic %s'%auth, 'Content-Type':'application/json', 'Accept':'application/json'}
+        io=StringIO()
+        json.dump(owner,io)
+        json_owner=io.getvalue()
+        p=self.get_page('/rest/patients/%s/permissions/owner'%ID, headers=headers, post=json_owner, special='PUT')
+        print(p)
+        return(p)
+
+
+    def delete_patient(self, eid, auth):
+        """
+        Delete patient.
+        """
+        auth=b2a_base64(auth).strip()
+        headers={'Authorization':'Basic %s'%auth, 'Content-Type':'application/json', 'Accept':'application/json'}
         p=self.get_page('/rest/patients/eid/%s'%eid, headers=headers, post='', special='DELETE')
         print(p)
 
@@ -127,12 +161,11 @@ class PhenotipsClient(Browser):
                     patient["ethnicity"]={"maternal_ethnicity":[],"paternal_ethnicity":[]}
             patient["prenatal_perinatal_history"]={}
             patient["prenatal_perinatal_phenotype"]={"prenatal_phenotype":[],"negative_prenatal_phenotype":[]}
-            patient['reporter']='UKIRDC'
+            patient['reporter']=r['owner']
             if 'gender' in r:
                 gender={'0':'U','1':'M','2':'F'}[str(r['gender'])]
                 patient['sex']=gender
-            if 'solved' in r:
-                patient['solved']=r['solved']
+            #if 'solved' in r: patient['solved']=r['solved']
             #patient['contact']={ "user_id":r['owner'], "name":r['owner'], "email":'', "institution":'' }
             patient['contact']={ "name":'UKIRDC', "email":'', "institution":'' }
             patient['clinicalStatus']={ "clinicalStatus":"affected" }
@@ -141,7 +174,11 @@ class PhenotipsClient(Browser):
             #update_patient(ID=r['sample'],auth=auth,patient=patient)
             #delete_patient(ID=r['sample'],auth=auth,patient=patient)
             # if patient exists, update patient, otherwise create patient
-            self.update_patient(eid=patient['external_id'],auth=auth,patient=patient)
+            #self.update_patient(eid=patient['external_id'],auth=auth,patient=patient)
+            permissions = { "owner" : { "id" : "xwiki:Groups.UKRIDC", "type":"group" }, "visibility" : { "level":  "private" }, "collaborators" : [{ "id" : "xwiki:XWiki.UKIRDC", "level" : "edit"} , { "id" : "xwiki:Groups.UKIRDC Administrators", "level" : "edit" }] }
+            print(permissions)
+            #self.update_permissions(permissions=permissions,eid=patient['external_id'],auth=auth)
+            self.update_owner(owner={'id':'xwiki:Groups.UKIRDC','type':'group'},auth=auth,eid=patient['external_id'])
 
     def patient_hpo(self, eid, auth):
         """
@@ -211,6 +248,16 @@ class PhenotipsClient(Browser):
             print(eid)
             p=self.get_patient(auth,eid)
             db.patients.insert(p,w=0)
+
+
+    def get_vocabularies(self,auth,vocabulary):
+        auth=b2a_base64(auth).strip()
+        # get vocabularies
+        #http://localhost:1235/rest/vocabularies/terms/HP:0000556
+        headers={'Authorization':'Basic %s'%auth, 'Accept':'application/json; application/xml'}
+        p=self.get_page('/rest/vocabularies/%s'%vocabulary, headers=headers)
+        print(p)
+        return p
 
 
 
