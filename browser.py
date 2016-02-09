@@ -236,7 +236,7 @@ class Browser(object):
                 return self.get(location, None, get_headers, e.secure)
             else:
                 raise
-    def get( self, location, params=None, headers=dict(), secure=None ):
+    def get( self, location, params=None, headers=dict(), secure=None, special='' ):
         """
         Makes a GET request, returning the http request object
         """
@@ -248,7 +248,8 @@ class Browser(object):
         self._add_referer(headers)
         for attempts in xrange(self.REDIRECT_LIMIT):
             try:
-                return self.request( 'GET', location, None, headers, secure )
+                if special: return self.request( special, location, None, headers, secure )
+                else: return self.request( 'GET', location, None, headers, secure )
             except LocalRedirect, e:
                 if self.redirect_automatically:
                     location = url_join(location, e.location)
