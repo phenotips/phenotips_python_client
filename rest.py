@@ -94,16 +94,17 @@ class PhenotipsClient(Browser):
             print(patient)
             self.create_patient(auth=auth,patient=patient)
 
-    def delete_patient(self, eid, auth, patient):
+    def delete_patient(self, eid, auth):
         auth=b2a_base64(auth).strip()
         headers={'Authorization':'Basic %s'%auth, 'Content-Type':'application/json', 'Accept':'application/json'}
-        io=StringIO()
-        json.dump(patient,io)
-        json_patient=io.getvalue()
-        p=self.get_page('/rest/patients/eid/%s'%eid, headers=headers, post=json_patient, special='DELETE')
+        #io=StringIO()
+        #json.dump(patient,io)
+        #json_patient=io.getvalue()
+        #p=self.get_page('/rest/patients/eid/%s'%eid, headers=headers, post=json_patient, special='DELETE')
+        p=self.get_page('/rest/patients/eid/%s'%eid, headers=headers, post='', special='DELETE')
         print(p)
 
-    def update_phenotips_from_csv(info, owner,password):
+    def update_phenotips_from_csv(self, info, owner,password):
         """
         Each column in the csv file
         represent a patient atribute.
@@ -112,24 +113,28 @@ class PhenotipsClient(Browser):
         info=pandas.read_csv(info)
         print(info.columns.values)
         for i, r, in info.iterrows():
-            if r['owner']!=owner: continue
+            #if r['owner']!=owner: continue
             patient=dict()
-            auth='%s:%s' % (r['owner'],password,)
+            auth='%s:%s' % (owner,password,)
             #auth=login
             #auth=b2a_base64(auth).strip()
             patient['external_id']=r['sample']
-            ethnicity=r['ethnicity']
-            gender={'0':'U','1':'M','2':'F'}[str(r['gender'])]
-            if isinstance(ethnicity,str):
-                patient["ethnicity"]={"maternal_ethnicity":[ethnicity],"paternal_ethnicity":[ethnicity]}
-            else:
-                patient["ethnicity"]={"maternal_ethnicity":[],"paternal_ethnicity":[]}
+            if 'ethnicity' in r:
+                ethnicity=r['ethnicity']
+                if isinstance(ethnicity,str):
+                    patient["ethnicity"]={"maternal_ethnicity":[ethnicity],"paternal_ethnicity":[ethnicity]}
+                else:
+                    patient["ethnicity"]={"maternal_ethnicity":[],"paternal_ethnicity":[]}
             patient["prenatal_perinatal_history"]={}
             patient["prenatal_perinatal_phenotype"]={"prenatal_phenotype":[],"negative_prenatal_phenotype":[]}
-            patient['reporter']=r['owner']
-            patient['sex']=gender
-            patient['solved']='unsolved'
-            patient['contact']={ "user_id":r['owner'], "name":r['owner'], "email":r['email'], "institution":'' }
+            patient['reporter']='UKIRDC'
+            if 'gender' in r:
+                gender={'0':'U','1':'M','2':'F'}[str(r['gender'])]
+                patient['sex']=gender
+            if 'solved' in r:
+                patient['solved']=r['solved']
+            #patient['contact']={ "user_id":r['owner'], "name":r['owner'], "email":'', "institution":'' }
+            patient['contact']={ "name":'UKIRDC', "email":'', "institution":'' }
             patient['clinicalStatus']={ "clinicalStatus":"affected" }
             #patient['disorders']=[ { "id":r['phenotype'], 'label':''} ]
             patient['features']=[ { "id":r['phenotype'], 'label':'', 'type':'phenotype', 'observed':'yes' } ]
