@@ -138,7 +138,7 @@ class PhenotipsClient(Browser):
         p=self.get_page('/rest/patients/eid/%s'%eid, headers=headers, post='', special='DELETE')
         print(p)
 
-    def update_phenotips_from_csv(self, info, owner,password):
+    def update_phenotips_from_csv(self, info, auth, owner_group=[], collaborators=[], contact={}):
         """
         Each column in the csv file
         represent a patient atribute.
@@ -149,7 +149,6 @@ class PhenotipsClient(Browser):
         for i, r, in info.iterrows():
             #if r['owner']!=owner: continue
             patient=dict()
-            auth='%s:%s' % (owner,password,)
             #auth=login
             #auth=b2a_base64(auth).strip()
             patient['external_id']=r['sample']
@@ -167,18 +166,19 @@ class PhenotipsClient(Browser):
                 patient['sex']=gender
             #if 'solved' in r: patient['solved']=r['solved']
             #patient['contact']={ "user_id":r['owner'], "name":r['owner'], "email":'', "institution":'' }
-            patient['contact']={ "name":'UKIRDC', "email":'', "institution":'' }
+            patient['contact']=contact
             patient['clinicalStatus']={ "clinicalStatus":"affected" }
             #patient['disorders']=[ { "id":r['phenotype'], 'label':''} ]
-            patient['features']=[ { "id":r['phenotype'], 'label':'', 'type':'phenotype', 'observed':'yes' } ]
+            patient['features']=[ { "id":hpo, 'label':'', 'type':'phenotype', 'observed':'yes' } for hpo in r['phenotype'].split(';') ]
             #update_patient(ID=r['sample'],auth=auth,patient=patient)
+            self.update_patient(patient['external_id'], auth, patient)
             #delete_patient(ID=r['sample'],auth=auth,patient=patient)
             # if patient exists, update patient, otherwise create patient
             #self.update_patient(eid=patient['external_id'],auth=auth,patient=patient)
-            permissions = { "owner" : { "id" : "xwiki:Groups.UKRIDC", "type":"group" }, "visibility" : { "level":  "private" }, "collaborators" : [{ "id" : "xwiki:XWiki.UKIRDC", "level" : "edit"} , { "id" : "xwiki:Groups.UKIRDC Administrators", "level" : "edit" }] }
+            permissions = { "owner" : owner_group, "visibility" : { "level":  "private" }, "collaborators" : collaborators  }
             print(permissions)
             #self.update_permissions(permissions=permissions,eid=patient['external_id'],auth=auth)
-            self.update_owner(owner={'id':'xwiki:Groups.UKIRDC','type':'group'},auth=auth,eid=patient['external_id'])
+            self.update_owner(owner=owner_group,auth=auth,eid=patient['external_id'])
 
     def patient_hpo(self, eid, auth):
         """
