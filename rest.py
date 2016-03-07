@@ -195,14 +195,14 @@ class PhenotipsClient(Browser):
         Dumps the HPO terms from a patient record
         to tsv file.
         """
-        patients=get_patient(auth)['patientSummaries']
+        patients=self.get_patient(auth)['patientSummaries']
         #file(sprintf('uclex_hpo_%d-%d-%d.txt'),)
         hpo_file=open(outFile, 'w+')
         print('eid', 'hpo', 'genes', 'solved', sep='\t',file=hpo_file)
         for p in patients:
             eid=p['eid']
             print(eid)
-            patient=get_patient(auth,eid)
+            patient=self.get_patient(auth,eid)
             print(patient)
             if 'features' in patient:
                 hpo=','.join([f['id'] for f in patient['features']])
@@ -221,11 +221,11 @@ class PhenotipsClient(Browser):
         Dumps patient to JSON.
         """
         auth='%s:%s' % (owner, password,)
-        patients=get_patient(auth)['patientSummaries']
+        patients=self.get_patient(auth)['patientSummaries']
         for p in patients:
             eid=p['eid']
             print(eid)
-            patient=get_patient(auth,eid)
+            patient=self.get_patient(auth,eid)
             io=StringIO()
             json.dump(patient,io)
             json_patient=io.getvalue()
