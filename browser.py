@@ -10,7 +10,6 @@ import re
 import socket
 import gzip
 import StringIO
-from StringIO import StringIO
 import time
 import random
 from binascii import b2a_base64, a2b_base64
