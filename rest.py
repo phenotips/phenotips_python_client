@@ -212,7 +212,10 @@ class PhenotipsClient(Browser):
                 genes=','.join([g['gene'] for g in patient['genes']])
             else:
                 genes=''
-            solved=patient['solved']['status']
+            if 'solved' in patient:
+                solved=patient['solved']['status']
+            else:
+                solved='unsolved'
             print(eid, hpo, genes, solved, sep='\t',file=hpo_file)
 
 
