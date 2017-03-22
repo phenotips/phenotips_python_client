@@ -25,8 +25,9 @@ class PhenotipsClient():
     def __init__(self, host='localhost', port='8080',debug=True,print_requests=True):
         self.site='%s:%s'%(host,port,)
 
-    def request_phenotips_session(self, username=None, password=None):
-        auth='%s:%s' % (username, password,)
+    def get_phenotips_session(self, auth = None, username = None, password = None):
+        if not auth: 
+            auth = '%s:%s' % (username, password,)
         encoded_auth=b2a_base64(auth).strip()
         headers={'Authorization':'Basic %s'%encoded_auth, 'Accept':'application/json'}
         url='http://%s/rest/patients?start=%d&number=%d' % (self.site,0,1)
@@ -37,27 +38,6 @@ class PhenotipsClient():
             return s
         else:
             return None
-
-    def create_session_with_phenotips(self, auth=None):
-        encoded_auth=b2a_base64(auth).strip()
-        headers={'Authorization':'Basic %s'%encoded_auth, 'Accept':'application/json'}
-        url='http://%s/rest/patients?start=%d&number=%d' % (self.site,0,1)
-        s = requests.Session()
-        response = s.get(url, headers=headers)
-        if response :
-            username = (auth.split(':'))[0]
-            session_dict = {'phenotips_session': s, 'user': username}
-            return session_dict
-        else:
-            return None
-
-    def get_phenotips_session(self, session):
-        if not session or not 'phenotips_session' in session:
-            return None
-        phenotips_session = session['phenotips_session']
-        if not phenotips_session:
-            return None
-        return phenotips_session
 
     def get_patient(self,session,eid=None,number=10000,start=0,cache=True):
         """
@@ -82,7 +62,8 @@ class PhenotipsClient():
             r=s.get(url, headers=headers)
             try:
                 r=r.json()
-                del r['_id']
+                if '_id' in r:
+                    del r['_id']
                 return r
             except:
                 return None
@@ -99,11 +80,13 @@ class PhenotipsClient():
         Retrieves all permissions: owner, collaborators, visibility.
         """
 
-        s = self.get_phenotips_session(session) # TODO LMTW change all these to s=session. Remove create_session_with_phenotips and get_phenotips_session
+        s = session 
         if not s:
             return None
         if not ID:
             p=self.get_patient(session=session,eid=eid)
+            if not p:
+                return None
             ID=p['id']
         headers={'Accept':'application/json; application/xml'}
         r=s.get('http://%s/rest/patients/%s/permissions' % (self.site,ID), headers=headers)
@@ -113,7 +96,7 @@ class PhenotipsClient():
 
     # create patient
     def create_patient(self, session, patient):
-        s = self.get_phenotips_session(session)
+        s = session
         if not s:
             return None
         headers={'Content-Type':'application/json', 'Accept':'application/json'}
@@ -126,7 +109,7 @@ class PhenotipsClient():
         """
         Update patient if exists, otherwise create.
         """
-        s = self.get_phenotips_session(session)
+        s = session
         if not s:
             return None
         patient['external_id']=eid
@@ -149,7 +132,7 @@ class PhenotipsClient():
         Update permissions of patient.
         """
         #permission = { "owner" : { "id" : "xwiki:XWiki.RachelGillespie" }, "visibility" : { "level":  "private" }, "collaborators" : [{ "id" : "xwiki:XWiki.UKIRDC", "level" : "edit" }, { "id" : "xwiki:Groups.UKIRDC Administrators)", "level" : "edit" }] }
-        s = self.get_phenotips_session(session)
+        s = session
         if not s:
             return None
         if not ID:
@@ -169,7 +152,7 @@ class PhenotipsClient():
         Update owner of patient.
         """
         #permission = { "owner" : { "id" : "xwiki:XWiki.RachelGillespie" }, "visibility" : { "level":  "private" }, "collaborators" : [{ "id" : "xwiki:XWiki.UKIRDC", "level" : "edit" }, { "id" : "xwiki:Groups.UKIRDC Administrators)", "level" : "edit" }] }
-        s = self.get_phenotips_session(session)
+        s = session
         if not s:
             return None
         if not ID:
@@ -188,7 +171,7 @@ class PhenotipsClient():
         """
         Delete patient.
         """
-        s = self.get_phenotips_session(session)
+        s = session
         if not s:
             return None
         headers={'Content-Type':'application/json', 'Accept':'application/json'}
@@ -203,7 +186,7 @@ class PhenotipsClient():
         """
         info=pandas.read_csv(info,sep=',')
         print(info.columns.values)
-        session = self.create_session_with_phenotips(auth=auth)
+        session = self.get_phenotips_session(auth=auth)
         for i, r, in info.iterrows():
             print(r)
             #if r['owner']!=owner: continue
@@ -255,7 +238,7 @@ class PhenotipsClient():
         Dumps the HPO terms from a patient record
         to tsv file.
         """
-        session = self.create_session_with_phenotips(auth=auth)
+        session = self.get_phenotips_session(auth=auth)
         patients=self.get_patient(session=session)['patientSummaries']
         #file(sprintf('uclex_hpo_%d-%d-%d.txt'),)
         hpo_file=open(outFile, 'w+')
@@ -284,7 +267,7 @@ class PhenotipsClient():
         """
         Dumps patient to JSON.
         """
-        session = self.create_session_with_phenotips(auth=auth)
+        session = self.get_phenotips_session(auth=auth)
         patients=self.get_patient(session=session)['patientSummaries']
         for p in patients:
             eid=p['eid']
@@ -304,7 +287,7 @@ class PhenotipsClient():
         client = pymongo.MongoClient(host=mongo_host, port=int(mongo_port))
         db=client[mongo_dbname]
         db.patients.drop()
-        session = self.create_session_with_phenotips(auth=auth)
+        session = self.get_phenotips_session(auth=auth)
         patients=self.get_patient(session)['patientSummaries']
         for p in patients:
             eid=p['eid']
@@ -328,7 +311,7 @@ class PhenotipsClient():
         import pymongo
         client = pymongo.MongoClient(host=mongo_host, port=int(mongo_port))
         db=client[mongo_dbname]
-        session = self.create_session_with_phenotips(auth=auth)
+        session = self.get_phenotips_session(auth=auth)
         for eid in patient_ids:
             print(eid)
             p=self.get_patient(session=session,eid=eid)
@@ -345,7 +328,7 @@ class PhenotipsClient():
 
 
     def get_vocabularies(self,session,vocabulary):
-        s = self.get_phenotips_session(session)
+        s = session
         if not s:
             return None
         # get vocabularies
