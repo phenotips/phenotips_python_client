@@ -39,7 +39,7 @@ class PhenotipsClient():
         else:
             return None
 
-    def get_patient(self,auth=None,session=None,eid=None,number=10000,start=0,cache=True):
+    def get_patient(self,auth=None,session=None,eid=None,number=10000,start=0):
         """
         Get patient with eid or all patients if not
         specified
