@@ -34,13 +34,13 @@ conn.dump_to_mongodb(auth='username:password',mongo_host='localhost',mongo_port=
 
 ### Authenticated Session 
 Get a session:
-'''python
+```python
 session=conn.get_phenotips_session(auth='username:password')
-'''
-The session can now be used to access Phenotips with no further requirement for '''auth'''. E.g. retrieve all patients:
-'''python
+```
+The session can now be used to access Phenotips with no further requirement for ```auth``` E.g. retrieve all patients:
+```python
 patients = conn.get_patient(session=session)
-'''
+```
 
 ## Example
 
