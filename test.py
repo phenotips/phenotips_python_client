@@ -23,7 +23,18 @@ class PhenotipsTestCase(unittest.TestCase):
         invalid_password_session = self.conn.get_phenotips_session(username='demo', password='demo123x')
         assert(not invalid_password_session)
 
-   
+    def test_create_and_delete_patient(self):
+        eid = self.create_patient_test01()
+        patient_retrieved = self.conn.get_patient(session=self.sess, eid=eid)
+        assert(patient_retrieved)
+        assert(not 'patients' in patient_retrieved) # Indicates that there is more than one patient with this eid in the DB.
+        patient_name = patient_retrieved['patient_name']
+        name_retrieved = str(patient_name['first_name'])
+        assert(name_retrieved == 'Paolo') 
+        self.conn.delete_patient(session=self.sess,eid=eid) 
+        permissions = self.conn.get_permissions(session=self.sess, eid=eid)
+        assert(not permissions)
+
     def test_get_patient(self):
        
         all_patients_from_phenotips = self.conn.get_patient(session=self.sess)
@@ -50,53 +61,27 @@ class PhenotipsTestCase(unittest.TestCase):
         new_total_from_phenotips = len(all_eids)
         assert(new_total_from_phenotips==total_from_phenotips)
 
-        eid = 'P0000797'
+        eid = self.create_patient_test01()
         patient_from_phenotips = self.conn.get_patient(session=self.sess, eid=eid)
         assert(patient_from_phenotips)
         eid_from_phenotips = str(patient_from_phenotips['external_id'])
         assert(eid_from_phenotips == eid)
+        self.conn.delete_patient(session=self.sess,eid=eid)      
 
-    @staticmethod
-    def load_patient(file_location):
-        with open(file_location, 'r') as json_data:
-            for line in json_data:
-                dataset = json.loads(line)
-            return dataset
-     
-    def test_update_patient(self):      
+    def test_update_patient(self):  
+        eid = self.create_patient_test01()
         file_location = "./test_data/patient-update-name.json"
         patient = PhenotipsTestCase.load_patient(file_location)
-        eid = 'P0000005'
-        self.conn.update_patient(eid, session=self.sess, patient=patient)
+        self.conn.update_patient(session=self.sess, eid=eid, patient=patient)
         patient_from_phenotips = self.conn.get_patient(session=self.sess, eid=eid)
         assert(patient_from_phenotips)
         patient_name = patient_from_phenotips['patient_name']
         name_from_phenotips = str(patient_name['first_name'])
         assert(name_from_phenotips == 'Updated')
-
-        unauthorised_eid = 'P0000798'
-        self.conn.update_patient(unauthorised_eid, session=self.sess, patient=patient)            
-
-    def test_create_and_delete_patient(self):
-        file_location = "./test_data/simple-patient-Test01.json"
-        patient = PhenotipsTestCase.load_patient(file_location)
-        self.conn.create_patient(session=self.sess, patient=patient)
-        eid = 'Test01'
-        patient_retrieved = self.conn.get_patient(session=self.sess, eid=eid)
-        assert(patient_retrieved)
-        assert(not 'patients' in patient_retrieved) # Indicates that there is more than one patient with this eid in the DB.
-        patient_name = patient_retrieved['patient_name']
-        name_retrieved = str(patient_name['first_name'])
-        assert(name_retrieved == 'Paolo') 
-        self.conn.delete_patient(session=self.sess,eid=eid) 
-        permissions = self.conn.get_permissions(session=self.sess, eid=eid)
-        assert(not permissions)
+        self.conn.delete_patient(session=self.sess,eid=eid)        
             
     def test_get_permissions(self):      
-        file_location = "./test_data/simple-patient-Test01.json"
-        patient = PhenotipsTestCase.load_patient(file_location)
-        self.conn.create_patient(session=self.sess, patient=patient)
-        eid = 'Test01'
+        eid = self.create_patient_test01()
         permissions = self.conn.get_permissions(session=self.sess, eid=eid)
         links = permissions['links']
         links_0 = links[0]
@@ -112,10 +97,7 @@ class PhenotipsTestCase(unittest.TestCase):
         assert(not permissions)
 
     def test_update_permissions(self):      
-        file_location = "./test_data/simple-patient-Test01.json"
-        patient = PhenotipsTestCase.load_patient(file_location)
-        self.conn.create_patient(session=self.sess, patient=patient)
-        eid = 'Test01'
+        eid = self.create_patient_test01()
         original_permissions =  {"links":[{"allowedMethods":["GET","PATCH","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions","rel":"self"},{"allowedMethods":["GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/owner","rel":"https://phenotips.org/rel/owner"},{"allowedMethods":["DELETE","GET","PUT","PATCH"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/collaborators","rel":"https://phenotips.org/rel/collaborators"},{"allowedMethods":["GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/visibility","rel":"https://phenotips.org/rel/visibility"},{"allowedMethods":["DELETE","GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006","rel":"https://phenotips.org/rel/patientRecord"}],"owner":{"links":[{"allowedMethods":["GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/owner","rel":"https://phenotips.org/rel/owner"}],"id":"xwiki:XWiki.demo","name":"Demo Guest","email":"support@phenotips.org","type":"user"},"visibility":{"links":[{"allowedMethods":["GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/visibility","rel":"https://phenotips.org/rel/visibility"}],"level":"private","label":"private","description":"Private cases are only accessible to their owners, but they do contribute to aggregated statistics."},"collaborators":{"links":[{"allowedMethods":["DELETE","GET","PUT","PATCH"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/collaborators","rel":"https://phenotips.org/rel/collaborators"}],"collaborators":[]}}
         new_permissions =       {"links":[{"allowedMethods":["GET","PATCH","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions","rel":"self"},{"allowedMethods":["GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/owner","rel":"https://phenotips.org/rel/owner"},{"allowedMethods":["DELETE","GET","PUT","PATCH"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/collaborators","rel":"https://phenotips.org/rel/collaborators"},{"allowedMethods":["GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/visibility","rel":"https://phenotips.org/rel/visibility"},{"allowedMethods":["DELETE","GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006","rel":"https://phenotips.org/rel/patientRecord"}],"owner":{"links":[{"allowedMethods":["GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/owner","rel":"https://phenotips.org/rel/owner"}],"id":"xwiki:XWiki.demo","name":"Demo Guest","email":"support@phenotips.org","type":"user"},"visibility":{"links":[{"allowedMethods":["GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/visibility","rel":"https://phenotips.org/rel/visibility"}],"level":"public","label":"private","description":"Private cases are only accessible to their owners, but they do contribute to aggregated statistics."},"collaborators":{"links":[{"allowedMethods":["DELETE","GET","PUT","PATCH"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/collaborators","rel":"https://phenotips.org/rel/collaborators"}],"collaborators":[]}}
         self.conn.update_permissions(session=self.sess,permissions=new_permissions,eid=eid)
@@ -127,10 +109,7 @@ class PhenotipsTestCase(unittest.TestCase):
         self.conn.delete_patient(session=self.sess,eid=eid) 
 
     def test_update_owner(self):        
-        file_location = "./test_data/simple-patient-Test01.json"
-        patient = PhenotipsTestCase.load_patient(file_location)
-        self.conn.create_patient(session=self.sess, patient=patient)
-        eid = 'Test01' 
+        eid = self.create_patient_test01()
         original_owner =    {"links":[{"allowedMethods":["GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions/owner","rel":"self"},{"allowedMethods":["GET","PATCH","PUT"],"href":"http://localhost:8080/rest/patients/P0000006/permissions","rel":"https://phenotips.org/rel/permissions"},{"allowedMethods":["DELETE","GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000006","rel":"https://phenotips.org/rel/patientRecord"}],"id":"xwiki:XWiki.demo","name":"Demo Guest","email":"support@phenotips.org","type":"user"}
         new_owner =         {"links":[{"allowedMethods":["GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000001/permissions/owner","rel":"self"},{"allowedMethods":["GET","PATCH","PUT"],"href":"http://localhost:8080/rest/patients/P0000001/permissions","rel":"https://phenotips.org/rel/permissions"},{"allowedMethods":["DELETE","GET","PUT"],"href":"http://localhost:8080/rest/patients/P0000001","rel":"https://phenotips.org/rel/patientRecord"}],"id":"xwiki:XWiki.Admin","name":"Administrator","email":"support@phenotips.org","type":"user"}
         self.conn.update_owner(session=self.sess,owner=new_owner,eid=eid)
@@ -145,6 +124,19 @@ class PhenotipsTestCase(unittest.TestCase):
         vocab = 'terms/HP:0000556'
         r = self.conn.get_vocabularies(session=self.sess,vocabulary=vocab)
         assert(str(r['name']) == 'Retinal dystrophy')
+
+    @staticmethod
+    def load_patient(file_location):
+        with open(file_location, 'r') as json_data:
+            for line in json_data:
+                dataset = json.loads(line)
+            return dataset
+     
+    def create_patient_test01(self):
+        file_location = "./test_data/simple-patient-Test01.json"
+        patient = PhenotipsTestCase.load_patient(file_location)
+        self.conn.create_patient(session=self.sess, patient=patient)
+        return 'Test01'
 
 if __name__ == '__main__':
     unittest.main()
